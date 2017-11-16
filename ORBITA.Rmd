@@ -1,0 +1,81 @@
+---
+title: "ORBITA-A Bayesian Interpretation"
+author: "Anupam Singh ,MD"
+date: "November 4, 2017"
+output: html_document
+---
+```{r,include=FALSE}
+source("bayes.R")
+```
+
+
+The already live cardiology twitter became abuzz with activity post results of [ORBITA](http://www.thelancet.com/journals/lancet/article/PIIS0140-6736(17)32714-9/fulltext?elsca1=tlxpr)
+there was extensive coverage of ORBITA in [NYT](https://www.nytimes.com/2017/11/02/health/heart-disease-stents.html) and [cardiobrief](https://www.medpagetoday.com/cardiology/cardiobrief/68988) and what followed was peak twitter  with some polls calling editorialist [unhinged](https://twitter.com/ajaykirtane/status/927139224062693381) for calling for downgradation of PCI in guidelines in stable angina and overstating PCI risk and other rants [ridiculing](https://twitter.com/HeartShapedWoes/status/927053746810449925) non - interventionists for pedantics.
+
+```{r, out.width='100%'}}
+knitr::include_graphics("2.png")
+```
+
+
+## Very Wide , Non-Informative Prior
+
+```{r}
+bayescont(eslo=-180,eshi=180,alpha=1,hci=42,lci=-8.9,thr=30,rope1=10,rope2=-10)
+```
+
+similar estimates to default frequentist analysis.
+
+```{r}
+
+bayescontplot(eslo=-60,eshi=60,alpha=1,hci=42,lci=-8,title = "Non-Informative Prior")
+```
+
+
+## Skeptical prior 
+Assuming a worsening of 30 seconds with PCI and max improvement of 30 seconds with mean of zero
+
+```{r}
+bayescont(eslo=-30,eshi=30,alpha=1,hci=42,lci=-8,thr=30,rope1=10,rope2=-10)
+```
+
+```{r}
+
+bayescontplot(eslo=-30,eshi=30,alpha=1,hci=42,lci=-8,title = "Skeptical Prior")
+```
+
+## Optimistic prior 
+Assuming at worst - no improvement  with PCI and at best improvement of 60 seconds with mean improvement of thirty seconds
+
+
+```{r}
+bayescont(eslo=0,eshi=60,alpha=1,hci=42,lci=-8,thr=30,rope1=10,rope2=-10)
+```
+
+```{r}
+
+bayescontplot(eslo=0,eshi=60,alpha=1,hci=42,lci=-8,title = " Optimistic Prior")
+```
+
+# Highly optimistic prior
+
+```{r}
+bayescont(eslo=30,eshi=90,alpha=1,hci=42,lci=-8,thr=30,rope1=10,rope2=-10)
+```
+
+```{r}
+
+bayescontplot(eslo=30,eshi=90,alpha=1,hci=42,lci=-8,title = "Highly Optimistic Prior")
+
+```
+
+## Probably small effect prior
+
+```{r}
+bayescont(eslo=15,eshi=45,alpha=1,hci=42,lci=-8,thr=30,rope1=10,rope2=-10)
+```
+
+```{r}
+
+bayescontplot(eslo=15,eshi=45,alpha=1,hci=42,lci=-8,title = "Small effect Prior")
+```
+

@@ -1,0 +1,495 @@
+---
+title: "Clinical Trial- A Bayesian analysis"
+author: "Anupam Kumar Singh, MD"
+date: "29 October 2017"
+output: html_document
+---
+
+In response to a recent clinical trial in [JAMA](https://jamanetwork.com/journals/jama/article-abstract/2658322) , twitter verse was abuzz with enthusiasm and [skepticism](https://twitter.com/f2harrell/status/923620115043831808) about use bayesian methods. Now a social media platform like twitter amplifies our bayesian human tendencies, hence prior belief/information/skepticism(Prior) often overwhelms data(evidence) at hand. This post attempts to address some issues about Bayesian interpretaion of clinical trials.
+Key issues discussed in this article will be   :
+
+1. Why use bayesian interpretation of clinical trials
+2. Conclusions from Frequentist interpretation is as good as Bayesian interpretation with uniformative prior?why bother?
+3. Use of prior information will lead to rigging of already rigged game aka *Pfizer will write the rule Book*
+4. It is too mathematically complex . Hence it will be used to fudge and distort
+5. Bayesianism of physicians is better than bayesianism of regulators.
+
+## Q1 1. Why use bayesian interpretation of clinical trials?
+
+Let us start with A clinical trial 
+Test group had 19 primary outcome events in 78 patients.
+Control group had 22 primary outcome events in 79 patients.
+
+Prima-faci it looks like that there is insufficient evidence that treatment  works.
+Some twitterattis objected that trialist stated that there is 76% probability of greater than zero benefit.
+
+We will try to examine these issues  ..
+
+First let's carry out a traditional frequentist interpretaion of this clinical trial
+
+```{r}
+Events = c(19,22)
+Total = c(78,79)
+Group = c("Therapy","Control")
+
+df= data.frame(Events,Total,Group)
+
+prop.test(Events,Total)
+
+
+```
+
+Thus we see that that two groups have events rates of 24.35% and 27.8% ,while the effect has 95% confidence interval of 18.49% decrease in event rate to 11.5% increase with p value of 0.75.
+It looks like that there is insufficient evidence that it works( some would incorrectly suggest that it doesnt work,however we can only reject null hypothesis in frequentist stats , not accept it.), at the same time the high p value with wide confidence interval suggests that this trial was underpowered.
+
+
+Success or failure of trial must be looked from perspective of the intent of effect size that trialist sought out to explore , because that is what they use in power and sample size calculations.(Thus frequentists use prior information all the time to design trils , so it is unfair on bayesians that they get called out on this.)
+
+So what kind of effect size were the trialists expecting that they planned a study with group size 78 per patients.
+
+They mention a previous study with RR 0.72(0.56-0.95). So what were the effect size trialist were expecting with n=78 per group. Exppecting a 30% event rate in control group and 30%% reduction in event rate(~21%% in therapy group and 1:1 ratio of recruitment, lets determine sample size)
+
+```{r}
+library(Hmisc)
+round(bsamsize(0.3,0.21,power=0.8),2)
+
+```
+
+
+While trialists havent given us a clue as to how they arrived at sample size of 79 per group, we can see that expecting a 30% risk reduction with an event rate of 30% in control group would require almost 370 patients per group and sample size was inadequate from this point of view.
+
+
+
+From the "optimistic" perspective of trialists , the trial was failure but in my opinion considerable uncertainty exists , therapy can cause 18% decrease in absolute event rate to 11% increase and the trial was underpowered.
+
+The trial was negative as and underpowered as investigators were expecting an expected event rate of 60% but in study only ~25% event rate was seen in control group . Due to failure to recruit study was taken as convenience sample.
+
+Advantage of Bayes in this setting:
+
+1. Bayesian methods enable us to ascertain probability of a cerain thtreshold of benefit. For example in this case , benefits can be from 18% decrease in event rate to 11% increase. Bayesian methods can help us to know probability of greater than a specific threshold say 10% or 5% risk reduction which is not possible with frequentist methods.
+
+2. Bayesian methods can help us to incorporate prior information(like used in power calculation) in inference. Thus we can check robustness of our conclusions by seeing if our inferrence or probability of benefit holds even with optimistic (say 30% expected benefit with upper and lower limit of 50% benefit to 5% benefit) or skeptical belief (0% benefit with limits of 20% decrease in risk to 20% increase in risk). We can "stress-test"our inference to see if probability of efficacy is higher than 0% or pre-specified threshold with both these prior beliefs, we can quantify our evidence as strong if the probability holds or uncertain otherwise. See a schema here. 
+
+In Frequentist inference, no such belief can be incorporated , in effect it is like a bayesian uninformative prior with belief than any risk reduction is possible ( example 1000% risk decresae to 1000% increase). This is unreasonable and that is why bayesian uninformative priors are criticised .In "real world" information is always out there and discarding that information is not good, for example it is generally known that relatively large effects by therapies are uncommon n not reproducible. Most therapies/exposure have odds ratio between  five times decrease tofive time increase (OR 0.2-5) or a conservative estimate of OR (0.5-2). Discarding that information can lead to wastage of resources and even hacking p values leading to unreasonable inferernces.
+Of course, a good bayesian must be made to express both his optimistic and skeptical belief and check if his inferences hold after that. in contrast to that bayesian equivalent  frequentist belief is almost always unreasonable.
+
+3. While bayesian methods can be complex for complex prior beliefs, in this particular case we will be using conjugate n power priors with simple mathematical formula.
+
+4. Bayesian methods dont penalize us for repeated looks at data and are theoretically more coherent than frequentist methods where amount of post-hoc correction and degree of freedom to be spend is always controversial.
+
+
+So let's get started
+Lets assume a prior belief that Odds ratio  of our therapy has higher limit of maximum benefit with odds of events(failure ) rate at  0.2, while in worst case the odds of harm will increase five times represented by lower limit of 5. 
+Now notice this will be criticised by people as being too much wide. 
+However, it must be emphasised here that
+
+a)in default frequentist analysis as analog to bayesian belief -any kind of effect size is possible (eg OR 0.0001 to OR 1000), thus we are throwing away lot of prior information
+b) In Bayesian analysis this information is placed upfront rather than hiding it in bowels like frequentist analysis
+
+
+
+A prior beliefwith maximum benefit with odds of events(failure ) rate at ORhi = 0.2, while in worst case ORlo= 5 , can be represented by a gaussian distribution of log odds ratio with mean at average of log odds, while standard deviation is absolute of difference in log odds divided by 3.92. Let's calculate it in R.
+
+```{r}
+xpr = (log(0.2)+log(5))/2
+sdpr = abs((log(0.2)-log(5)))/3.92
+xpr
+sdpr
+```
+Thus our mean log odds ratio is 0 and standard deviation of log odds ratio is 0.82.
+
+It can be represented by a gaussian distribution. Lets visualise it in R.
+
+```{r}
+library(ggplot2)
+
+ggplot(data.frame(x=c(-2,2)),aes(x=x))+stat_function(fun=dnorm,args=list(xpr,sdpr))+xlab("Log Odds Ratio")+ylab("Frequency")+labs(title="Prior Probability of Effect Size")
+```
+
+Lets now calculate these parameters for our actual data. we have 19 events and 59 non -events in therapy group while 22,57 of these in control group. We plan to calculate odds ratio. Then transform it into mean log odds ratio and calculate standard deviation of the odds ratio.
+
+We take log Odds ratio instead of standard deviation because it follows a normal symmetric distribution, and it is easy to calculate a posterior belief distribution by help of prior belief and data when we use a conjugate distribution of normal prior and normally distributed data with simple mathematical formula instead of using Markov chain monte carlo simulations which uses a lot of computing power. So lets calculate 
+
+```{r}
+a1 = 19 # Events in Therapy group
+b1 = 59 # Non-events in Therpay group
+c1 = 22 # Events in Control group
+d1 = 57# Non-events in Control group
+
+xe = log(((a1+0.5)*(d1+0.5))/((b1+0.5)*(c1+0.5)))
+
+
+sde = sqrt(1/(a1+0.5) + 1/(b1+0.5)+1/(c1+0.5)+1/(d1+0.5))
+xe
+sde
+exp(xe)
+exp(xe+1.96*sde)
+exp(xe-1.96*sde)
+```
+Thus our odds ratio for the study is 0.83 with confidence interval of 0.41 to 1.69.     It can be represented by normal distribution on log Odds taio with mean log OR -0.17 and sd 0.36 
+
+It can be represented by a gaussian distribution. Lets visualise it in R.
+
+```{r}
+
+
+ggplot(data.frame(x=c(-2,2)),aes(x=x))+stat_function(fun=dnorm,args=list(xe,sde))+xlab("Log Odds Ratio")+ylab("Frequency")+labs(title="Data-based Probability of Effect Size")
+```
+
+
+while frequentist interpretation captures inference from data only, bayesian inference has advantage that it can incorporate prior information . 
+The posterior belief inference depends upon a lot of factors
+1. The amount of weight , you want to give prior information with respect to data. Thus if you want to give same weight to prior information and data, the alpha is 1 , while if you want to give half weight it is 0.5. The alpha parameter is called power prior. In standard normal conjugate analysis alpha parameter is 1.
+2. Effect sample size : Effective sample size is 4/ sd*sd
+Thus the strength of evidence is inversely proportional to square of standard deviation of effect size.
+3. It also depends on mean effect size.
+
+2 and 3 are modified by alpha parameter as well. Lets carry out theses calculations in R.
+
+```{r}
+alpha=1
+espr = alpha*(4/(sdpr*sdpr)) # Effective sample size of prior
+ esxe = 4/(sde*sde)# Effective sample size of data
+ 
+ xpost = (espr*xpr+esxe*xe)/(espr+esxe)
+ sdpost = 2/sqrt(espr+esxe)
+ xpost
+ sdpost
+ 
+ esxe/espr # ratio of effective sample size of data to prior
+ 
+ exp(xpost)
+exp(xpost+1.96*sdpost)
+exp(xpost-1.96*sdpost)
+ 
+
+```
+
+
+Thus our odds ratio for the posterior belief after combining prior belief/evidence and study data is 0.86 with confidence interval of 0.45 to 1.64.     It can be represented by normal distribution on log Odds taio with mean log OR -0.14 and sd 0.33. 
+
+It can be represented by a gaussian distribution. Lets visualise it in R.
+
+```{r}
+
+
+ggplot(data.frame(x=c(-2,2)),aes(x=x))+stat_function(fun=dnorm,args=list(xpost,sdpost))+xlab("Log Odds Ratio")+ylab("Frequency")+labs(title="Posterior Probability of Effect Size")
+```
+
+
+Contrast it from our previous inference about study data without factoring in prior information - 
+
+*Thus our odds ratio for the study is 0.83 with confidence interval of 0.41 to 1.69.     It can be represented by normal distribution on log Odds taio with mean log OR -0.17 and sd 0.36*
+
+We note that though our study result is still inconclusive odds ratio vary from 0.45 to 1.64 . It has mildly  tempered extreme beliefs of OR 0.41-1.69, which is from data itself. Thus bayesian analysis can be helpful in tempering extreme beliefs and it has been widely been used in genome assays where frequentist statistical significance has widely been abused. It is also useful in small,underpowered studies where prior information can help in better evidence synthesis.
+
+Let us visualise all the three plots together
+
+```{r}
+ggplot(data.frame(x=c(-2,2)),aes(x=x))+stat_function(fun=dnorm,args=list(xpr,sdpr),aes(color="Prior"))+stat_function(fun=dnorm,args=list(xe,sde),aes(color="Data"))+stat_function(fun=dnorm,args=list(xpost,sdpost),aes(color="Posterior"))+xlab("Log Odds Ratio")+ylab("Frequency")+labs(title=" Probability of Effect Size")
+```
+
+
+
+## 2. Conclusions from Frequentist interpretation is as good as Bayesian interpretation with uniformative prior?why bother?
+
+
+One aspect of criticism is right. Some information is always available, hence a weakly informative or subjective inference is always better than default uninformative inference. However apart from tmpering of belief , bayesian analysis can help us in determining probability of benefit higher or lower than a certain threshold and by induction can help us in identifying the probability that benefitt or harm falls in equivalence region(lower limit no clinically significant benefit , upper limit no clinically significant harm.)
+
+Both these statements are not possible in frequentist inference. If you have a confidence interval of 0.83(0.41-1.69), you cant make a claim that one value in interval is more likely than other due to nature of the inference and neither you can calculate probability of effect falling in a clinically non-meaningful zone(NULL region) say OR (0.95-1.05) as we cant accept a null hypothesis(equivalence tests try to help in this situation-however bayesian inference gives explicit probabilities and hence is much better in my opinion)
+
+Lets cal culate the probability that our odds ratio is less than 0.95, higher then 1.05 or in equivalence zone i.e OR 0.95-1.05
+
+```{r}
+higher = pnorm(log(0.95),xpost,sdpost)
+lower = pnorm(log(1.05),xpost,sdpost)
+equivalence = abs(higher-lower)
+
+higher
+lower
+equivalence
+
+
+```
+
+Thus the probability that odds ratio is lower than 0.95(clinically significant benefit around 5% risk reduction) is 61%, the probability that that odds ratio is lower than 1.05(clinically signifcant harm,around 5% risk increase) is 72% and by deduction probability of harm is 28%, while probability of it falling in equivalence region is 10.9%. Thus study is inconclusive, contrast it with case suppose study had a narrower confidence intervals and here probability of equivalence would be higher. While it is intuitively apparent, bayesian inference makes these intutions explicit.
+
+Lets calculate probability of risk reduction higher than 10%,20% and 30% because these are more inuitive and clinically relevant than odds ratio
+
+```{r}
+ p = c1/(c1+d1)
+ 
+ ror = function (a){
+   del = 1 -a/100
+   k = del*(1-p)/(1-p*del)
+   log(k)
+ }
+ 
+ 
+ ten =ror(10)
+ twenty = ror(20)
+ thirty = ror(30)
+ 
+ tenp = 100*pnorm(ten,xpost,sdpost)
+ 
+twentyp = 100*pnorm(twenty,xpost,sdpost)
+ 
+thirtyp = 100*pnorm(thirty,xpost,sdpost)
+
+zerop = 100*pnorm(0,xpost,sdpost)
+
+ 
+zerop
+tenp
+twentyp
+thirtyp
+
+```
+
+Thus the probability that treatment is better than placebo is 67%. The probability that it cause 10%,20% and 30% risk reduction is 67.37% , 32.59% , 16.79% respectively. These all estimates can be used in making relevant clinical decisions.
+
+As a bonus, we can also calculate probability of two outcomes occcuring together of probability of either of them or simple utility analysis of composite end points by these raw probabilities.
+
+I have rolled all these calculations in a simple function because real beauty of bayesian analysis is in stress-testing your inferences with different prior information
+
+```{r,include=FALSE}
+bayesprop = function(xpr,sdpr,alpha,a1,b1,c1,d1,rope1,rope2){
+
+xe = log((a1*d1)/(b1*c1))
+
+
+sde = sqrt(1/a1 + 1/b1+1/c1+1/d1)
+
+
+
+
+ espr = alpha*(4/(sdpr*sdpr))
+ esxe = 4/(sde*sde)
+ 
+ xpost = (espr*xpr+esxe*xe)/(espr+esxe)
+ sdpost = 2/sqrt(espr+esxe)
+ 
+ 
+ 
+ p = c1/(c1+d1)
+ 
+ ror = function (a){
+   del = 1 -a/100
+   k = del*(1-p)/(1-p*del)
+   log(k)
+ }
+ 
+ 
+ ten =ror(10)
+ twenty = ror(20)
+ thirty = ror(30)
+ 
+ tenp = 100*pnorm(ten,xpost,sdpost)
+ 
+twentyp = 100*pnorm(twenty,xpost,sdpost)
+ 
+thirtyp = 100*pnorm(thirty,xpost,sdpost)
+
+zerop = 100*pnorm(0,xpost,sdpost)
+
+ 
+
+
+rope1x= ror(rope1)
+rope2x= ror(rope2)
+
+rope1p = 100*pnorm(rope1x,xpost,sdpost)
+ 
+rope2p = 100*pnorm(rope2x,xpost,sdpost)
+
+eqreg = abs(rope1p-rope2p)
+
+lor = round(exp(xpr -1.96*sdpr),2)
+hor = round(exp(xpr+1.96*sdpr),2)
+
+conc = c(xpr,sdpr,lor,hor,alpha,espr,xe,sde,esxe,xpost,sdpost,zerop,tenp,twentyp,thirtyp,eqreg)
+ 
+round(conc,2)
+
+n = c(" Prior log OR","Prior SD","Lower limit prior OR ","Higher limit limit prior OR ","Power Prior","Effective Sample size Prior"," Data(log OR)","Data SD","Effective Sample size Data"," Posterior log OR"," Posterior SD","Pr(Risk Reduction>0%)","Pr(Risk reduction>10%)","Pr(Risk reduction>20%)","Pr(Risk reduction>30%)","Pr(Risk reduction in equivalence region)")
+names(conc) = n
+round(conc,2)}
+
+```
+
+Lets analyse the same trial with an optimistic prior that mean OR =0.8(typical in power calculations) and sd OR = log(0.95)/1.96 corresponding to maximum risk reduction around 30% and minimum risk reduction of 0% with no harm with equivalence region of 5% risk reduction to 5% risk increase
+
+```{r}
+bayesprop(xpr=log(0.8),sdpr=abs(log(0.8)/1.96),alpha=1,a1=19,b1=59,c1=22,d1=57,rope1=5,rope2=-5)
+```
+Thus we see in optimistic prior, Pr(Effect>0%) 97.83,Pr(Effect>10%) 75.83 ,Pr(Effect>20%) 23.61 ,Pr(Effect>30%) 1.16 ,Pr(Effect in equivalence region) 8.11 percent. Here the probability of benefit shoots up. 
+
+Lets analyse the same trial with an skeptical(regulator's) prior that mean log OR =0(zero effect corresponding to odds ratio 1) and sd OR = log(0.8)/1.96 corresponding to maximum risk reduction around 20% and minimum risk reduction of -20% corresponding to 20% risk increase or harm  with no harm with equivalence region of 5% risk reduction to 5% risk increase
+
+```{r}
+bayesprop(xpr=log(1),sdpr=abs(log(0.8)/1.96),alpha=1,a1=19,b1=59,c1=22,d1=57,rope1=5,rope2=-5)
+```
+
+Thus we see in skeptical prior, Pr(Effect>0%) 55.90,Pr(Effect>10%) 12.11 ,Pr(Effect>20%) 23.61 ,Pr(Effect>30%) 0 ,Pr(Effect in equivalence region) 47.27 percent. Here the probability of benefit shoots up. 
+
+Thus we see that while under optimistic prior probability of benefit is just 97% , under skeptical prior it falls to 55.90% and probability that it has no clinically significant benefit/harm  increases to 47%  
+
+It is just not mathematical exeercise but a robust sensitivity analysis can help us stress test our conclusions.
+
+
+## 3. The rule book will be written by pfizer 
+
+As we see if a robust sensitivity analysis of bayesian inference is made mandatory it has potential to be much more useful in making clinical inference than frequentist inference, further in bayesian analysis the analyst is **forced** to share his prior beliefs /information and can be criticsed for that, contrast from default frequentist inference where p value hacking,inflation of effects(by model hacking) and multiple comparisons are common without a consistent framework or clarity. In fact  bayesian inference all secondary outcomes can be analysed under skeptical prior , without need for arbitrary corrections that are applied in frequentist framework.
+
+
+For some people it is difficult to think in log odds ratio and sd so i have written a function, which helps us calculate all these priors in terms of higher and lower limit of risk reduction
+
+```{r,include=FALSE}
+bayesci = function(hci,lci,alpha,a1,b1,c1,d1,rope1,rope2){
+   p = c1/(c1+d1)
+ 
+ ror = function (a){
+   del = 1 -a/100
+   k = del*(1-p)/(1-p*del)
+   log(k)
+ }
+ 
+  xpr = (ror(hci)+ror(lci))/1.96
+ sdpr = abs(ror(hci)-ror(lci))/3.92
+
+xe = log((a1*d1)/(b1*c1))
+
+
+sde = sqrt(1/a1 + 1/b1+1/c1+1/d1)
+
+
+
+
+ espr = alpha*(4/(sdpr*sdpr))
+ esxe = 4/(sde*sde)
+ 
+ xpost = (espr*xpr+esxe*xe)/(espr+esxe)
+ sdpost = 2/sqrt(espr+esxe)
+ 
+ 
+ 
+ p = c1/(c1+d1)
+ 
+ ror = function (a){
+   del = 1 -a/100
+   k = del*(1-p)/(1-p*del)
+   log(k)
+ }
+ 
+ 
+ ten =ror(10)
+ twenty = ror(20)
+ thirty = ror(30)
+ 
+ tenp = 100*pnorm(ten,xpost,sdpost)
+ 
+twentyp = 100*pnorm(twenty,xpost,sdpost)
+ 
+thirtyp = 100*pnorm(thirty,xpost,sdpost)
+
+zerop = 100*pnorm(0,xpost,sdpost)
+
+ 
+
+
+rope1x= ror(rope1)
+rope2x= ror(rope2)
+
+rope1p = 100*pnorm(rope1x,xpost,sdpost)
+ 
+rope2p = 100*pnorm(rope2x,xpost,sdpost)
+
+eqreg = abs(rope1p-rope2p)
+
+lor = round(exp(xpr -1.96*sdpr),2)
+hor = round(exp(xpr+1.96*sdpr),2)
+
+conc = c(xpr,sdpr,lor,hor,alpha,espr,xe,sde,esxe,xpost,sdpost,zerop,tenp,twentyp,thirtyp,eqreg)
+ 
+round(conc,2)
+
+n = c(" Prior log OR","Prior SD","Lower limit prior OR ","Higher limit limit prior OR ","Power Prior","Effective Sample size Prior"," Data(log OR)","Data SD","Effective Sample size Data"," Posterior log OR"," Posterior SD","Pr(Risk Reduction>0%)","Pr(Risk reduction>10%)","Pr(Risk reduction>20%)","Pr(Risk reduction>30%)","Pr(Risk reduction in equivalence region)")
+names(conc) = n
+round(conc,2)}
+
+```
+
+Lets calculate inference from prior belief which assuemes a maximum risk reduction of 40% and minimum risk reduction of 20% risk increase(-20%)
+```{r}
+bayesci(hci=40,lci=-20,alpha=1,a1=19,b1=59,c1=22,d1=57,rope1=5,rope2=-5)
+```
+
+
+Thus we can see it is very easy to get very rich and informative intuitions with bayesian estimates
+
+Finally we will write a function which helps us analyse default and custom priors
+
+```{r,include=FALSE}
+bayestotal = function(hci,lci,expes,alpha,a1,b1,c1,d1,rope1=5,rope2=-5){
+  
+  p = c1/(c1+d1)
+ 
+ ror = function (a){
+   del = 1 -a/100
+   k = del*(1-p)/(1-p*del)
+   log(k)
+ }
+ 
+ xopt= ror(expes)
+ sdt = abs(xopt)/1.96
+ skep = 0
+  
+  m = rbind(
+bayesprop(xpr=0,sdpr=5,alpha=alpha,a1=a1,b1=b1,c1=c1,d1=d1,rope1=rope1,rope2=rope2),bayesprop(xpr=0,sdpr=1,alpha=alpha,a1=a1,b1=b1,c1=c1,d1=d1,rope1=rope1,rope2=rope2),bayesprop(xpr=0,sdpr=0.35,alpha=alpha,a1=a1,b1=b1,c1=c1,d1=d1,rope1=rope1,rope2=rope2),bayesci(hci=hci,lci=lci,alpha=alpha,a1=a1,b1=b1,c1=c1,d1=d1,rope1=rope1,rope2=rope2),bayesprop(xpr=xopt,sdpr=sdt,alpha=alpha,a1=a1,b1=b1,c1=c1,d1=d1,rope1=rope1,rope2=rope2),bayesprop(xpr=skep,sdpr=sdt,alpha=alpha,a1=a1,b1=b1,c1=c1,d1=d1,rope1=rope1,rope2=rope2))
+
+  m = as.data.frame(m)
+
+n = c(" Prior log OR","Prior SD","Lower limit prior OR ","Higher limit limit prior OR ","Power Prior","Effective Sample size Prior"," Data(log OR)","Data SD","Effective Sample size Data"," Posterior log OR"," Posterior SD","Pr(Risk Reduction>0%)","Pr(Risk reduction>10%)","Pr(Risk reduction>20%)","Pr(Risk reduction>30%)","Pr(Risk reduction in equivalence region)")
+
+names(m) =n
+
+k= as.data.frame(t(m))
+
+names(k) = c("Very Wide uninformative Prior","Weakly informative Prior","Weakly Informative Prior 2","Custom prior-confidence limit","Optimistic prior from expected effect","Skeptical prior from expected effect")
+
+k
+}
+```
+
+expes is expected effect size as expected in power calculations . Here Custom prior assumes a high estimate(hci) of 40% risk reduction, a low estimate(lci) of 20% risk increase while expected effect size(expes) of 20% (risk reduction with region of euivalence from 5% risk reduction(rope1 ) to no risk reduction(rope2=0)
+```{r}
+bayestotal(hci=40,lci=-20,expes=20,alpha=1,a1=19,b1=59,c1=22,d1=57,rope1=7.5,rope2=0)
+```
+
+
+### Problem of Multiple comparison and bayesian solution
+
+Multiple comparisons lead to p value hacking and there is no consistent framework in error control method(frequentist methodology) for it since p value depends on sampling intention,practically this is the case most of the times.
+It is easily handled in bayesian methodology by using skeptical prior or narrower range of belief. 
+
+
+### Further resources :
+
+1. [harrell](http://www.fharrell.com/2017/10/bayesian-vs-frequentist-statements.html)
+2. [greenland](http://andrewgelman.com/2008/02/05/specifying_a_pr_1/)
+3. [gelman](http://andrewgelman.com/2008/01/24/specifying_a_pr/)
+4 . [rigged priors](http://andrewgelman.com/2017/10/04/worry-rigged-priors/)
+5. [Bayesian classification of clinical practice guidelines](https://www.researchgate.net/publication/26729154_Bayesian_classification_of_clinical_practice_guidelines)
+6. [Prior conviction](http://www.sciencedirect.com/science/article/pii/S0735109704004784?via%3Dihub)
+7. [Web App](http://medstats.atspace.cc/bayes.html)
+
+
+
+### KEY POINTS
+1. Bayesian methods can give richer estimates than frequentist inference
+2. Bayesian methodologist must use prior information as part of the analysis
+3. Bayesian inference must be stress-tested with community of skeptical and optimistic priors.
+4. Bayesian inference can easily address problem of multiple comparison with skeptical priors
+5. Bayesian inference can combine probability of outcomes , thus helping in composite end point problems.
+
+
